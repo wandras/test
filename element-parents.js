@@ -1,6 +1,6 @@
 /*
 * DOM enhancement
-* DOMElement.parents implementation
+* Element.parents implementation
 */
 
 Object.defineProperty(Element.prototype, "parents", {
@@ -18,5 +18,4 @@ Object.defineProperty(Element.prototype, "parents", {
     enumerable: true,
     configurable: true
 });
-
 
