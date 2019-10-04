@@ -16,9 +16,9 @@ Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = functio
 			var optionsValue = options;
 		} else if (!!options) {
 			var optionsValue = {
-				useCapture: 'capture' in options ? options.capture || false,
-				once: 'once' in options ? options.once || false,
-				passive: 'passive' in options ? options.passive || false
+				useCapture: 'capture' in options ? options.capture : false,
+				once: 'once' in options ? options.once : false,
+				passive: 'passive' in options ? options.passive : false
 			};
 		}
 		
