@@ -22,7 +22,6 @@ Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = functio
             };
         }
         
-        var args = [eventName, callback, optionsValue];
         // cache the listeners added to the target:
         this.eventListenersList.push([eventName, callback, optionsValue]);
         return this.addEventListener(eventName, callback, optionsValue);
