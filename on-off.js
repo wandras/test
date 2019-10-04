@@ -10,27 +10,19 @@ Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = functio
 		this.eventListenersList = [];
 	}
 	
+	// cache the listeners added to the target:
+	this.eventListenersList.push(arguments);
+	
 	if ('addEventListener' in this) {
 		// W3C compliant method
-		if (typeof(options) === 'boolean') {
-			var optionsValue = options;
-		} else if (!!options) {
-			var optionsValue = {
-				useCapture: 'capture' in options ? options.capture : false,
-				once: 'once' in options ? options.once : false,
-				passive: 'passive' in options ? options.passive : false
-			};
-		}
-		
-		// cache the listeners added to the target:
-		this.eventListenersList.push([eventName, callback, optionsValue]);
-		return this.addEventListener(eventName, callback, optionsValue);
+		this.addEventListener.apply(this, arguments);
 	} else {
 		// environment using attachEvent and detachEvent methods
-		// cache the listeners added to the target:
-		this.eventListenersList.push([eventName, callback]);
-		return this.attachEvent('on' + eventName, callback);
+		this.attachEvent('on' + eventName, callback);
 	}
+	
+	// allow methods chaining:
+	return this;
 };
 
 Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = function(eventName, callback, useCapture) {
@@ -39,43 +31,61 @@ Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = func
 		this.eventListenersList = [];
 	}
 	
-	if ('removeEventListener' in this) {
-		// W3C compliant method
-		if (arguments.length > 0) {
-			// eventName given, remove only the specified listener
-			this.removeEventListener(eventName, callback, useCapture);
-			
-			this.eventListenersList.some(function(callbackObj, i) {
-				if (callbackObj[1] === callback) {
-					delete this.eventListenersList[i];
-					return true;
+	// set the removal method:
+	var removalMethod = 'removeEventListener' in this ? 'removeEventListener' : 'detachEvent';
+	
+	if (arguments.length > 1) {
+		// create a copy of the arguments array for fixing the event name later if needed:
+		var removalArg = arguments;
+		
+		if ('detachEvent' in this) {
+			removalArg[0] = 'on' + removalArg[0];
+		}
+		
+		// eventName given, remove only the specified listener
+		this[removalMethod].apply(this, removalArg);
+		
+		for (var i = 0; i < this.eventListenersList.length; ++i) {
+			if (this.eventListenersList[i][0] === eventName && this.eventListenersList[i][1] === callback) {
+				// remove the listener found and quit the loop:
+				this.eventListenersList.splice(i, 1);
+				break;
+			}
+		}
+	} else if (arguments.length === 1) {
+		// only event type specified, remove all listeners of the given event
+		for (var i = 0; i < this.eventListenersList.length; ++i) {
+			if (this.eventListenersList[i][0] === eventName) {
+				// remove the listener without specifying event options, they have not been given:
+				var removalArg = [eventName, this.eventListenersList[i][1]];
+				
+				if ('detachEvent' in this) {
+					removalArg[0] += 'on';
 				}
-			});
-		} else {
-			// no argument given, remove all the listeners on the current targetElement:
-			this.eventListenersList.some(function(callbackObj, i) {
-				this.removeEventListener(callbackObj[0], callbackObj[1], callbackObj[2]);
-				delete this.eventListenersList[i];
-			});
+				
+				this[removalMethod].apply(this, removalArg);
+				
+				// remove the listener found and quit the loop:
+				this.eventListenersList.splice(i, 1);
+				break;
+			}
 		}
 	} else {
-		// environment using attachEvent and detachEvent methods
-		if (arguments.length > 0) {
-			// eventName given, remove only the specified listener
-			this.detachEvent('on' + eventName, callback);
+		// no argument given, remove all the listeners on the current targetElement:
+		for (var i = 0; i < this.eventListenersList.length; ++i) {
+			var removalArg = this.eventListenersList[i];
 			
-			this.eventListenersList.some(function(callbackObj, i) {
-				if (callbackObj[1] === callback) {
-					delete this.eventListenersList[i];
-					return true;
-				}
-			});
-		} else {
-			// no argument given, remove all the listeners on the current targetElement:
-			this.eventListenersList.some(function(callbackObj, i) {
-				this.detachEvent('on' + callbackObj[0], callbackObj[1]);
-				delete this.eventListenersList[i];
-			});
-		}
+			if ('detachEvent' in this) {
+				removalArg[0] += 'on';
+			}
+			
+			this[removalMethod].apply(this, removalArg);
+		};
+		
+		// empty listeners cache:
+		this.eventListenersList = [];
 	}
+	
+	// allow methods chaining:
+	return this;
 };
