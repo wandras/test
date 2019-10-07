@@ -10,12 +10,15 @@ Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = functio
 		this.eventListenersList = [];
 	}
 	
+	// convert arguments to array:
+	var eventArg = Array.prototype.slice.call(arguments);
+	
 	// cache the listeners added to the target:
-	this.eventListenersList.push(arguments);
+	this.eventListenersList.push(eventArg);
 	
 	if ('addEventListener' in this) {
 		// W3C compliant method
-		this.addEventListener.apply(this, arguments);
+		this.addEventListener.apply(this, eventArg);
 	} else {
 		// environment using attachEvent and detachEvent methods
 		this.attachEvent('on' + eventName, callback);
@@ -31,15 +34,18 @@ Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = func
 		this.eventListenersList = [];
 	}
 	
-	// set the removal method:
+	// define the removal method:
 	var removalMethod = 'removeEventListener' in this ? 'removeEventListener' : 'detachEvent';
 	
 	if (arguments.length > 1) {
 		// create a copy of the arguments array for fixing the event name later if needed:
-		var removalArg = arguments;
+		var removalArg = Array.prototype.slice.call(removalArg);
 		
 		if ('detachEvent' in this) {
-			removalArg[0] = 'on' + removalArg[0];
+			// fix the event name:
+			removalArg[0] += 'on';
+			// remove unneeded arguments:
+			removalArg = removalArg.slice(0, 2);
 		}
 		
 		// eventName given, remove only the specified listener
@@ -60,14 +66,16 @@ Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = func
 				var removalArg = [eventName, this.eventListenersList[i][1]];
 				
 				if ('detachEvent' in this) {
+					// fix the event name:
 					removalArg[0] += 'on';
+					// remove unneeded arguments:
+					removalArg = removalArg.slice(0, 2);
 				}
 				
 				this[removalMethod].apply(this, removalArg);
 				
-				// remove the listener found and quit the loop:
+				// remove the listener found:
 				this.eventListenersList.splice(i, 1);
-				break;
 			}
 		}
 	} else {
@@ -76,7 +84,10 @@ Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = func
 			var removalArg = this.eventListenersList[i];
 			
 			if ('detachEvent' in this) {
+				// fix the event name:
 				removalArg[0] += 'on';
+				// remove unneeded arguments:
+				removalArg = removalArg.slice(0, 2);
 			}
 			
 			this[removalMethod].apply(this, removalArg);
