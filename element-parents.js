@@ -14,8 +14,8 @@ Object.defineProperty(Element.prototype, "parents", {
         }
         return parents;
     },
-    set: function() {},
     enumerable: true,
-    configurable: true
+    configurable: false,
+    writable: false
 });
 
