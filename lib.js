@@ -33,7 +33,7 @@
 	window.ElementList = ElementList;
 	
 	/*
-	// Event handling
+	* Event handling
 	* Implementation of .on() and .off() methods on Element, Window and HTMLDocument
 	* Used event bubbling as default setting
 	*/
