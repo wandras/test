@@ -32,6 +32,109 @@
 	// expose globally:
 	window.ElementList = ElementList;
 	
+	// all the elements have length set to 1
+	Object.defineProperty(window.Element.prototype, 'length', {
+		get: function() {
+			return 1;
+		}
+	});
+	
+	window.Element.prototype.item = function(index) {
+		return index === 0 ? this : null;
+	};
+	
+	window.NodeList.prototype.on = ElementList.prototype.on = function(eventName, callback, options) {
+		var i, len = this.length;
+		
+		for (i = 0; i < len; ++i) {
+			this[i].on.apply(this[i], arguments);
+		}
+		
+		// allow methods chaining:
+		return this;
+	};
+	
+	window.NodeList.prototype.off = ElementList.prototype.off = function(eventName, callback, options) {
+		var i, len = this.length;
+		
+		for (i = 0; i < len; ++i) {
+			this[i].off.apply(this[i], arguments);
+		}
+		
+		// allow methods chaining:
+		return this;
+	};
+	
+	
+	// test
+	window.HTMLDocument.prototype.find = window.Element.prototype.find = function(selector) {
+		var results = this.querySelectorAll(selector);
+		return results.length === 1 ? results[0] : results;
+	};
+	
+	window.NodeList.prototype.find = ElementList.prototype.find = function(selector) {
+		var results = new ElementList(),
+			i, len = this.length;
+		
+		for (i = 0; i < len; ++i) {
+			var matches = this[i].find(selector);
+			
+			if (matches.length > 0) {
+				results.push(this[i]);
+			}
+		}
+		
+		return results;
+	};
+	
+	// DOM manipulation
+	/*
+		Objectives:
+			elem.insertBefore(someElem) // part of the DOM
+			elem.insertAfter(someElem) // not existing
+			elem.appendChild(someElem) // part of the DOM
+			elem.appendTo(someElem) // not in standard DOM
+			elem.remove() // not in standard DOM
+	*/
+	window.Element.prototype.appendTo = function(element) {
+		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
+		
+		if (element && 'appendChild' in element) {
+			element.appendChild(this);
+		}
+	};
+	
+	window.Element.prototype.insertAfter = function(element) {
+		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
+		
+		if (element && element.nextSibling) {
+			element.parentNode.insertBefore(this, element.nextSibling);
+		}
+	};
+	
+	window.Element.prototype.remove = function() {
+		var parent = this.parentNode;
+		parent && parent.removeChild(this);
+	};
+	
+	// alias of document.find in the global context:
+	var _alias = '';
+	
+	// set an alias of document.find in window context:
+	document.find.setAlias = function(alias) {
+		_alias = alias;
+		window[alias] = function() {
+			return document.find.apply(document, arguments);
+		};
+	};
+	
+	// get the alias of document.find in window context:
+	document.find.getAlias = function() {
+		if (_alias && _alias in window) {
+			return _alias;
+		}
+	};
+	
 	/*
 	* Event handling
 	* Implementation of .on() and .off() methods on Element, Window and HTMLDocument
@@ -140,61 +243,6 @@
 		return this;
 	};
 	
-	// all the elements have length set to 1
-	Object.defineProperty(window.Element.prototype, 'length', {
-		get: function() {
-			return 1;
-		}
-	});
-	
-	window.Element.prototype.item = function(index) {
-		return index === 0 ? this : null;
-	};
-	
-	window.NodeList.prototype.on = ElementList.prototype.on = function(eventName, callback, options) {
-		var i, len = this.length;
-		
-		for (i = 0; i < len; ++i) {
-			this[i].on.apply(this[i], arguments);
-		}
-		
-		// allow methods chaining:
-		return this;
-	};
-	
-	window.NodeList.prototype.off = ElementList.prototype.off = function(eventName, callback, options) {
-		var i, len = this.length;
-		
-		for (i = 0; i < len; ++i) {
-			this[i].off.apply(this[i], arguments);
-		}
-		
-		// allow methods chaining:
-		return this;
-	};
-	
-	
-	// test
-	window.HTMLDocument.prototype.find = window.Element.prototype.find = function(selector) {
-		var results = this.querySelectorAll(selector);
-		return results.length === 1 ? results[0] : results;
-	};
-	
-	window.NodeList.prototype.find = ElementList.prototype.find = function(selector) {
-		var results = [],
-			i, len = this.length;
-		
-		for (i = 0; i < len; ++i) {
-			var matches = this[i].find(selector);
-			
-			if (matches.length > 0) {
-				results.push(this[i]);
-			}
-		}
-		
-		return results;
-	};
-	
 	window.HTMLDocument.prototype.ready = function(callback) {
 		if (this.readyState === 'interactive' || this.readyState === 'complete') {
 			callback();
@@ -212,55 +260,6 @@
 			this.addEventListener('load', callback, false);
 		} else if ('attachEvent' in this) {
 			this.attachEvent('onload', callback);
-		}
-	};
-	
-	
-	// DOM manipulation
-	/*
-		Objectives:
-			elem.insertBefore(someElem) // part of the DOM
-			elem.insertAfter(someElem) // not existing
-			elem.appendChild(someElem) // part of the DOM
-			elem.appendTo(someElem) // not in standard DOM
-			elem.remove() // not in standard DOM
-	*/
-	window.Element.prototype.appendTo = function(element) {
-		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
-		
-		if (element && 'appendChild' in element) {
-			element.appendChild(this);
-		}
-	};
-	
-	window.Element.prototype.insertAfter = function(element) {
-		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
-		
-		if (element && element.nextSibling) {
-			element.parentNode.insertBefore(this, element.nextSibling);
-		}
-	};
-	
-	window.Element.prototype.remove = function() {
-		var parent = this.parentNode;
-		parent && parent.removeChild(this);
-	};
-	
-	// alias of document.find in the global context:
-	var _alias = '';
-	
-	// set an alias of document.find in window context:
-	document.find.setAlias = function(alias) {
-		_alias = alias;
-		window[alias] = function() {
-			return document.find.apply(document, arguments);
-		};
-	};
-	
-	// get the alias of document.find in window context:
-	document.find.getAlias = function() {
-		if (_alias && _alias in window) {
-			return _alias;
 		}
 	};
 	
