@@ -1,7 +1,5 @@
 /*
-* DOM enhancement
-* Implementation of .on() and .off() methods on Element, Window and HTMLDocument
-* Used event bubbling as default setting
+* DOM and event handling enhancements
 */
 
 (function() {
@@ -34,7 +32,11 @@
 	// expose globally:
 	window.ElementList = ElementList;
 	
+	/*
 	// Event handling
+	* Implementation of .on() and .off() methods on Element, Window and HTMLDocument
+	* Used event bubbling as default setting
+	*/
 	Window.prototype.on = window.HTMLDocument.prototype.on = window.Element.prototype.on = function(eventName, callback, options) {
 		if (!('eventListenersList' in this)) {
 			// create a cache of event listeners attached:
