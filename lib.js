@@ -1,8 +1,12 @@
 /*
-* DOM and event handling enhancements
+* DOM traversing and manipulation enhancements
+* Event handling enhancements
 */
 
 (function() {
+	// set locally a shortcut for querySelectorAll:
+	var $ = document.querySelectorAll.bind(document);
+	
 	// Allow zero-index get on HTML nodes to return themselves:
 	Object.defineProperty(window.Element.prototype, 0, {
 		get: function() { return this; }
@@ -135,11 +139,7 @@
 		}
 	};
 	
-	/*
-	* Event handling
-	* Implementation of .on() and .off() methods on Element, Window and HTMLDocument
-	* Used event bubbling as default setting
-	*/
+	// Event handling
 	Window.prototype.on = window.HTMLDocument.prototype.on = window.Element.prototype.on = function(eventName, callback, options) {
 		if (!('eventListenersList' in this)) {
 			// create a cache of event listeners attached:
@@ -262,5 +262,4 @@
 			this.attachEvent('onload', callback);
 		}
 	};
-	
 })();
