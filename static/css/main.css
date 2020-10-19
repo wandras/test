@@ -1,0 +1,30 @@
+@import url(https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap);
+
+:root {
+  --font-color: #444;
+  --font-family: Inter, Roboto, Arial, Helvetica;
+  --font-size: 14px;
+  --font-weight: 300;
+  --letter-spacing: -0.5px;
+  --main-color: #607f8b; /* #4ae */
+  --inner-border-width: 1px;
+  --border-color: #ddd;
+  --v-padding: 10px;
+}
+
+
+/* GENERIC STYLE */
+*, *:before, *:after { margin; 0; padding: 0; box-sizing: border-box; outline: none; }
+html, body {
+    font: 14px var(--font-family); color: var(--font-color); line-height: 1.4em;
+    font-weight: var(--font-weight); letter-spacing: var(--letter-spacing);
+}
+.logo { font: 42px var(--font-family); margin: 0; padding: 10px 0 0 20px; font-weight: 800; letter-spacing: -3px; white-space: nowrap; }
+.logo span:first-child {
+    position: relative; top: 0; left: 0; padding: 0 13px 0 10px; color: var(--main-color); background: var(--main-color); color: #fff;
+    clip-path: ellipse(100% 125% at 100% 50%); z-index: 1;
+}
+.logo span:nth-child(2) { position: relative;top: 0; left: 0; margin: 0 0 0 -13px; background: transparent; z-index: 2; }
+
+.logo div { font: 12px var(--font-family); padding: 0 0 0 70px; letter-spacing: -0.5px; }
+
