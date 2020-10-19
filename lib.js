@@ -47,7 +47,7 @@
 	// expose globally:
 	window.ElementList = ElementList;
 	
-	NodeList.prototype.on = ElementList.prototype.on = function() {
+	NodeList.prototype.on = ElementList.prototype.on = function on() {
 		var i, len = this.length;
 		
 		for (i = 0; i < len; ++i) {
@@ -58,7 +58,7 @@
 		return this;
 	};
 	
-	NodeList.prototype.off = ElementList.prototype.off = function() {
+	NodeList.prototype.off = ElementList.prototype.off = function off() {
 		var i, len = this.length;
 		
 		for (i = 0; i < len; ++i) {
@@ -71,12 +71,12 @@
 	
 	
 	// test
-	HTMLDocument.prototype.find = Element.prototype.find = function(selector) {
+	HTMLDocument.prototype.find = Element.prototype.find = function find(selector) {
 		var results = this.querySelectorAll(selector);
 		return results.length === 1 ? results[0] : results;
 	};
 	
-	NodeList.prototype.find = ElementList.prototype.find = function(selector) {
+	NodeList.prototype.find = ElementList.prototype.find = function find(selector) {
 		var results = new ElementList(),
 			i, len = this.length;
 		
@@ -100,7 +100,7 @@
 			elem.appendTo(someElem) // not in standard DOM
 			elem.remove() // not in standard DOM
 	*/
-	Element.prototype.appendTo = function(element) {
+	Element.prototype.appendTo = function appendTo(element) {
 		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
 		
 		if (element && 'appendChild' in element) {
@@ -111,7 +111,7 @@
 		return this;
 	};
 	
-	Element.prototype.insertAfter = function(element) {
+	Element.prototype.insertAfter = function insertAfter(element) {
 		var element = typeof(element) === 'string' ? document.find(element)[0] : element[0];
 		
 		if (element && element.nextSibling) {
@@ -122,7 +122,7 @@
 		return this;
 	};
 	
-	Element.prototype.remove = function() {
+	Element.prototype.remove = function remove() {
 		var parent = this.parentNode;
 		parent && parent.removeChild(this);
 	};
@@ -131,7 +131,7 @@
 	var _alias = '';
 	
 	// set an alias of document.find in window context:
-	document.find.setAlias = function(alias) {
+	document.find.setAlias = function setAlias(alias) {
 		_alias = alias;
 		window[alias] = function() {
 			return document.find.apply(document, arguments);
@@ -147,7 +147,7 @@
 	
 	// Event handling
 	// Necessary polyfill for browsers not implementing Event.prototype.composedPath:
-	Event.prototype.composedPath = Event.prototype.composedPath || function() {
+	Event.prototype.composedPath = Event.prototype.composedPath || function composedPath() {
 		var target = this.target || null;
 		
 		if (!target || !target.parentElement) {
@@ -165,17 +165,17 @@
 		return path;
 	};
 	
-	Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = function() {
+	Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = function on() {
 		if (!('eventListenersList' in this)) {
 			// create a cache of event listeners attached:
 			this.eventListenersList = [];
 		}
 		
-		// prepare the event argument:
+		// object representing the listener:
 		var listener = {
-			eventName: null,
-			delegate: null,
-			handler: null
+			eventName: null, // string
+			delegate: null, // selector as a string, matching element delegates, for event delegation
+			handler: null // the function to trigger at the event
 		};
 		
 		if (typeof arguments[0] === 'string') {
@@ -238,7 +238,7 @@
 		return this;
 	};
 	
-	Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = function() {
+	Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = function off() {
 		if (!('eventListenersList' in this)) {
 			// create a cache of event listeners attached, if not existing:
 			this.eventListenersList = [];
@@ -273,9 +273,9 @@
 			
 		} else if (arguments.length === 1 && typeof arguments[0] === 'string') {
 			/**
+			 * event only has been specified:
 				.off(eventName)
 			**/
-			// only event type specified, remove all listeners of the given event
 			var eventName = arguments[0],
 				i,
 				len = this.eventListenersList.length;
@@ -297,13 +297,13 @@
 			}
 		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'function') {
 			/**
+			 * event and handler specified:
 				.off(eventName, handler)
 			**/
-			// only event type specified, remove all listeners of the given event
 			var eventName = arguments[0],
-				handler = arguments[1],
-				i,
-				len = this.eventListenersList.length;
+				handler = arguments[1];
+			
+			var i, len = this.eventListenersList.length;
 			
 			for (i = 0; i < len; ++i) {
 				var listener = this.eventListenersList[i];
@@ -320,37 +320,33 @@
 					this.eventListenersList.splice(i, 1);
 				}
 			}
-		} else if (typeof arguments[0] === 'string' && typeof arguments[2] === 'function') {
+		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
 			/**
+			 * event delegation, the second argument is a selector to match delegate elements:
 				.off(eventName, delegate, handler)
 			**/
-			if (typeof arguments[1] === 'string') {
-				// event delegation, the second argument is a selector
-				// arguments: [eventName, delegate, handler]
-				var eventName = arguments[0],
-					delegate = arguments[1],
-					handler = arguments[2];
-				
-				// prepare the event arguments for removeEventListener:
-				var i = 0, len = this.eventListenersList.length;
+			var eventName = arguments[0],
+				delegate = arguments[1],
+				handler = arguments[2];
+			
+			var i, len = this.eventListenersList.length;
 
-				for (i = 0; i < len; ++i) {
-					var listener = this.eventListenersList[i];
+			for (i = 0; i < len; ++i) {
+				var listener = this.eventListenersList[i];
 
-					if (listener.eventName === eventName && listener.delegate === delegate && listener.handler === handler) {
-						if ('detachEvent' in this) {
-							// fix the event name and remove unneeded arguments:
-							listener.eventName += 'on';
-						}
-						
-						// eventName given, remove only the specified listener
-						this[removalMethod](listener.eventName, listener.handler.proxy || listener.handler);
-
-						// remove the listener found:
-						this.eventListenersList.splice(i, 1);
-						// ...and quit the loop:
-						break;
+				if (listener.eventName === eventName && listener.delegate === delegate && listener.handler === handler) {
+					if ('detachEvent' in this) {
+						// fix the event name and remove unneeded arguments:
+						listener.eventName += 'on';
 					}
+					
+					// eventName given, remove only the specified listener
+					this[removalMethod](listener.eventName, listener.handler.proxy || listener.handler);
+
+					// remove the listener found:
+					this.eventListenersList.splice(i, 1);
+					// ...and quit the loop:
+					break;
 				}
 			}
 		}
@@ -359,7 +355,7 @@
 		return this;
 	};
 	
-	HTMLDocument.prototype.ready = function(callback) {
+	HTMLDocument.prototype.ready = function ready(callback) {
 		if (this.readyState === 'interactive' || this.readyState === 'complete') {
 			callback();
 		} else if ('addEventListener' in this) {
@@ -377,7 +373,7 @@
 		return this;
 	};
 	
-	Window.prototype.load = function(callback) {
+	Window.prototype.load = function load(callback) {
 		if (this.document.readyState === 'complete') {
 			// the document has been loaded:
 			callback();
