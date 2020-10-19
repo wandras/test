@@ -127,6 +127,23 @@
 		parent && parent.removeChild(this);
 	};
 	
+	Object.defineProperty(Element.prototype, "parents", {
+		// not implemented as method, like in jQuery, as native DOM has already Element.prototype.parent as an attribute
+		get: function() {
+			var parent = this.parentElement,
+			parents = [];
+
+			while (parent) {
+				parents.shift(parent);
+				parent = element.parentNode;
+			}
+			return parents;
+		},
+		enumerable: true,
+		configurable: false,
+		writable: false
+	});
+
 	// alias of document.find in the global context:
 	var _alias = '';
 	
