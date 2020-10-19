@@ -276,12 +276,11 @@
 			 * event only has been specified:
 				.off(eventName)
 			**/
-			var eventName = arguments[0],
-				i,
-				len = this.eventListenersList.length;
-			
-			for (i = 0; i < len; ++i) {
+			var eventName = arguments[0];
+
+			for (var i = 0; i < this.eventListenersList.length; ++i) {
 				var listener = this.eventListenersList[i];
+
 				if (listener.eventName === eventName) {
 					
 					if ('detachEvent' in this) {
@@ -293,6 +292,8 @@
 					
 					// remove the listener found:
 					this.eventListenersList.splice(i, 1);
+					// update the counter, as an array element has been removed:
+					i--;
 				}
 			}
 		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'function') {
@@ -303,10 +304,9 @@
 			var eventName = arguments[0],
 				handler = arguments[1];
 			
-			var i, len = this.eventListenersList.length;
-			
-			for (i = 0; i < len; ++i) {
+			for (var i = 0; i < this.eventListenersList.length; ++i) {
 				var listener = this.eventListenersList[i];
+
 				if (listener.eventName === eventName && listener.handler === handler) {
 					
 					if ('detachEvent' in this) {
@@ -318,6 +318,8 @@
 					
 					// remove the listener found:
 					this.eventListenersList.splice(i, 1);
+					// update the counter, as an array element has been removed:
+					i--;
 				}
 			}
 		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
@@ -329,9 +331,7 @@
 				delegate = arguments[1],
 				handler = arguments[2];
 			
-			var i, len = this.eventListenersList.length;
-
-			for (i = 0; i < len; ++i) {
+			for (var i = 0; i < this.eventListenersList.length; ++i) {
 				var listener = this.eventListenersList[i];
 
 				if (listener.eventName === eventName && listener.delegate === delegate && listener.handler === handler) {
@@ -345,8 +345,8 @@
 
 					// remove the listener found:
 					this.eventListenersList.splice(i, 1);
-					// ...and quit the loop:
-					break;
+					// update the counter, as an array element has been removed:
+					i--;
 				}
 			}
 		}
@@ -402,3 +402,4 @@
 		return obj === this;
 	};
 })();
+
