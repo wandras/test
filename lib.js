@@ -24,6 +24,19 @@
 			get: function() {
 				return Array.from(this.parentNode.children).indexOf(this);
 			}
+		},
+		'parents': {
+			// not implemented as method, like in jQuery, as native DOM has already Element.prototype.parent as an attribute
+			get: function() {
+				var parent = this.parentElement,
+				parents = [];
+
+				while (parent) {
+					parents.shift(parent);
+					parent = element.parentNode;
+				}
+				return parents;
+			}
 		}
 	});
 	
@@ -46,6 +59,15 @@
 	
 	// expose globally:
 	window.ElementList = ElementList;
+
+	// MUST ADD to NodeList and ElementList:
+	// index
+	// parent
+	// parents
+	// DOM traversing and manipulation attributes and methods
+	
+	// All the properties added must be kept not enumerable
+
 	
 	NodeList.prototype.on = ElementList.prototype.on = function on() {
 		var i, len = this.length;
@@ -127,23 +149,6 @@
 		parent && parent.removeChild(this);
 	};
 	
-	Object.defineProperty(Element.prototype, "parents", {
-		// not implemented as method, like in jQuery, as native DOM has already Element.prototype.parent as an attribute
-		get: function() {
-			var parent = this.parentElement,
-			parents = [];
-
-			while (parent) {
-				parents.shift(parent);
-				parent = element.parentNode;
-			}
-			return parents;
-		},
-		enumerable: true,
-		configurable: false,
-		writable: false
-	});
-
 	// alias of document.find in the global context:
 	var _alias = '';
 	
@@ -403,5 +408,4 @@
 		return obj === this;
 	};
 })();
-
 
