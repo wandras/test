@@ -8,11 +8,15 @@
 	Object.defineProperties(Element.prototype, {
 		// Allow zero-index get on HTML nodes to return themselves:
 		0: {
-			get: function() { return this; }
+			get: function() {
+				return this;
+			}
 		},
 		// define the item method, as Array's method is not applicable:
 		'item': {
-			value: function(i) { return this[i]; }
+			value: function(i) {
+				return this[i];
+			}
 		},
 		// define length as for collections; all the elements have length set to 1
 		'length': {
@@ -68,6 +72,14 @@
 	
 	// All the properties added must be kept not enumerable
 
+	Object.defineProperties(NodeList.prototype, {
+		'index': {
+			get: function() {
+				return this.length > 0 ? 0 : -1;
+			},
+			set: function() {}
+		}
+	});
 	
 	NodeList.prototype.on = ElementList.prototype.on = function on() {
 		var i, len = this.length;
@@ -189,68 +201,46 @@
 	
 	Window.prototype.on = HTMLDocument.prototype.on = Element.prototype.on = function on() {
 		if (!('eventListenersList' in this)) {
-			// create a cache of event listeners attached:
+			// create the cache of event listeners:
 			this.eventListenersList = [];
 		}
 		
 		// object representing the listener:
 		var listener = {
-			eventName: null, // string
+			eventType: null, // string
 			delegate: null, // selector as a string, matching element delegates, for event delegation
 			handler: null, // the function to trigger at the event
 			proxy: null // the delegate handler, in case of event delegation
 		};
-		
+
 		if (typeof arguments[0] === 'string') {
 			// eventType must be always a string
-			var eventName = arguments[0];
-			listener.eventName = eventName;
+			listener.eventType = arguments[0];
 			
 			if (arguments.length > 1 && typeof arguments[1] === 'function') {
-				// args: [eventName, handler]
-				var handler = arguments[1];
-				listener.handler = handler;
-				
-				// cache the listeners added to the target:
-				this.eventListenersList.push(listener);
-				
-				if ('addEventListener' in this) {
-					// W3C compliant method
-					this.addEventListener(eventName, handler, false);
-				} else {
-					// environment using attachEvent and detachEvent methods
-					this.attachEvent('on' + eventName, handler);
-				}
+				// .on(eventType, handler)
+				listener.handler = arguments[1];
 				
 			} else if (arguments.length > 2 && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
-				// args: [eventName, delegate, handler]
-				var delegate = arguments[1],
-					handler = arguments[2];
-				
-				// prepare the arguments to log:
-				listener.delegate = delegate;
-				listener.handler = handler;
+				// .on(eventType, delegate, handler)
+				listener.delegate = arguments[1];
+				listener.handler = arguments[2];
 				
 				// in event delegation, handler is wrapped
-				var proxy = function proxy(e) {
-					if ('is' in e.target && e.target.is(delegate)) {
-						return handler.call(e.target, e);
+				listener.proxy = function proxy(e) {
+					if ('is' in e.target && e.target.is(listener.delegate)) {
+						return listener.handler.call(e.target, e);
 					}
 				};
-				
-				// reference the delegated handler as a property of the original one:
-				listener.proxy = proxy;
-				
-				// cache the listeners added to the target:
-				this.eventListenersList.push(listener);
-				
-				if ('addEventListener' in this) {
-					// W3C compliant method
-					this.addEventListener(eventName, proxy, false);
-				} else {
-					// environment using attachEvent and detachEvent methods
-					this.attachEvent('on' + eventName, proxy);
-				}
+			}
+
+			// cache the listeners added to the target:
+			this.eventListenersList.push(listener);
+
+			if ('addEventListener' in this) {
+				this.addEventListener(listener.eventType, listener.proxy || listener.handler, false);
+			} else {
+				this.attachEvent('on' + listener.eventType, listener.proxy || listener.handler);
 			}
 		}
 		
@@ -260,95 +250,45 @@
 	
 	Window.prototype.off = HTMLDocument.prototype.off = Element.prototype.off = function off() {
 		if (!('eventListenersList' in this)) {
-			// create a cache of event listeners attached, if not existing:
+			// create the cache of event listeners, if not existing:
 			this.eventListenersList = [];
-			// quit, as no handler has been attached:
-			return this;
 		}
 		
-		if (arguments.length === 0) {
-			// no argument given, remove all the listeners on the current targetElement:
-			// .off()
-			
-			for (var i = 0; i < this.eventListenersList.length; ++i) {
-				var listener = this.eventListenersList[i];
-				
-				if ('removeEventListener' in this) {
-					this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
-				} else {
-					this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
-				}
+		var eventType = null,
+			delegate = null,
+			handler = null;
+		
+		if (arguments.length === 1 && typeof arguments[0] === 'string') {
+			// .off(eventType)
+			eventType = arguments[0];
 
+		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'function') {
+			// .off(eventType, handler)
+			eventType = arguments[0];
+			handler = arguments[1];
+			
+		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
+			// .off(eventType, delegate, handler)
+			eventType = arguments[0];
+			delegate = arguments[1];
+			handler = arguments[2];
+		}
+		
+		for (var i = 0; i < this.eventListenersList.length; ++i) {
+			var listener = this.eventListenersList[i];
+
+			if (((eventType === null || eventType === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate)
+				) || (eventType === null && handler === null && delegate === null)) {
+				if ('removeEventListener' in this) {
+					this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
+				} else {
+					this.detachEvent('on' + listener.eventType, listener.proxy || listener.handler);
+				}
+				
 				// remove the listener found:
 				this.eventListenersList.splice(i, 1);
 				// update the counter, as an array element has been removed:
 				i--;
-			};
-		} else if (arguments.length === 1 && typeof arguments[0] === 'string') {
-			// event only has been specified:
-			// .off(eventName)
-			var eventName = arguments[0];
-
-			for (var i = 0; i < this.eventListenersList.length; ++i) {
-				var listener = this.eventListenersList[i];
-
-				if (listener.eventName === eventName) {
-					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
-					} else {
-						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
-					}
-					
-					// remove the listener found:
-					this.eventListenersList.splice(i, 1);
-					// update the counter, as an array element has been removed:
-					i--;
-				}
-			}
-		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'function') {
-			// event and handler specified:
-			// .off(eventName, handler)
-			var eventName = arguments[0],
-				handler = arguments[1];
-			
-			for (var i = 0; i < this.eventListenersList.length; ++i) {
-				var listener = this.eventListenersList[i];
-
-				if (listener.eventName === eventName && listener.handler === handler) {
-					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
-					} else {
-						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
-					}
-					
-					// remove the listener found:
-					this.eventListenersList.splice(i, 1);
-					// update the counter, as an array element has been removed:
-					i--;
-				}
-			}
-		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
-			// event delegation, the second argument is a selector to match delegate elements:
-			// .off(eventName, delegate, handler)
-			var eventName = arguments[0],
-				delegate = arguments[1],
-				handler = arguments[2];
-			
-			for (var i = 0; i < this.eventListenersList.length; ++i) {
-				var listener = this.eventListenersList[i];
-
-				if (listener.eventName === eventName && listener.delegate === delegate && listener.handler === handler) {
-					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
-					} else {
-						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
-					}
-					
-					// remove the listener found:
-					this.eventListenersList.splice(i, 1);
-					// update the counter, as an array element has been removed:
-					i--;
-				}
 			}
 		}
 		
