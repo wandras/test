@@ -197,7 +197,8 @@
 		var listener = {
 			eventName: null, // string
 			delegate: null, // selector as a string, matching element delegates, for event delegation
-			handler: null // the function to trigger at the event
+			handler: null, // the function to trigger at the event
+			proxy: null // the delegate handler, in case of event delegation
 		};
 		
 		if (typeof arguments[0] === 'string') {
@@ -238,10 +239,7 @@
 				};
 				
 				// reference the delegated handler as a property of the original one:
-				listener.handler.proxy = proxy;
-				// save in the proxy a reference to the original callback:
-				proxy.origin = handler;
-				
+				listener.proxy = proxy;
 				
 				// cache the listeners added to the target:
 				this.eventListenersList.push(listener);
@@ -271,24 +269,21 @@
 		if (arguments.length === 0) {
 			// no argument given, remove all the listeners on the current targetElement:
 			// .off()
-			for (i = 0; i < this.eventListenersList.length; ++i) {
+			
+			for (var i = 0; i < this.eventListenersList.length; ++i) {
 				var listener = this.eventListenersList[i];
 				
 				if ('removeEventListener' in this) {
-					this.removeEventListener(listener.eventName, listener.handler.proxy || listener.handler);
+					this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
 				} else {
-					this.detachEvent('on' + listener.eventName, listener.handler.proxy || listener.handler);
+					this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
 				}
 
 				// remove the listener found:
-				listener = listener.splice(i, 1);
+				this.eventListenersList.splice(i, 1);
 				// update the counter, as an array element has been removed:
 				i--;
 			};
-			
-			// empty listeners cache:
-			this.eventListenersList = [];
-			
 		} else if (arguments.length === 1 && typeof arguments[0] === 'string') {
 			// event only has been specified:
 			// .off(eventName)
@@ -299,9 +294,9 @@
 
 				if (listener.eventName === eventName) {
 					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.handler.proxy || listener.handler);
+						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
 					} else {
-						this.detachEvent('on' + listener.eventName, listener.handler.proxy || listener.handler);
+						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
 					}
 					
 					// remove the listener found:
@@ -321,9 +316,9 @@
 
 				if (listener.eventName === eventName && listener.handler === handler) {
 					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.handler.proxy || listener.handler);
+						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
 					} else {
-						this.detachEvent('on' + listener.eventName, listener.handler.proxy || listener.handler);
+						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
 					}
 					
 					// remove the listener found:
@@ -344,9 +339,9 @@
 
 				if (listener.eventName === eventName && listener.delegate === delegate && listener.handler === handler) {
 					if ('removeEventListener' in this) {
-						this.removeEventListener(listener.eventName, listener.handler.proxy || listener.handler);
+						this.removeEventListener(listener.eventName, listener.proxy || listener.handler);
 					} else {
-						this.detachEvent('on' + listener.eventName, listener.handler.proxy || listener.handler);
+						this.detachEvent('on' + listener.eventName, listener.proxy || listener.handler);
 					}
 					
 					// remove the listener found:
