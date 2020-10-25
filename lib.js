@@ -81,6 +81,8 @@
 		}
 	});
 	
+	
+
 	NodeList.prototype.on = ElementList.prototype.on = function on() {
 		var i, len = this.length;
 		
@@ -277,8 +279,7 @@
 		for (var i = 0; i < this.eventListenersList.length; ++i) {
 			var listener = this.eventListenersList[i];
 
-			if (((eventType === null || eventType === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate)
-				) || (eventType === null && handler === null && delegate === null)) {
+			if (((eventType === null || eventType === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate))) {
 				if ('removeEventListener' in this) {
 					this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
 				} else {
