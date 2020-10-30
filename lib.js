@@ -81,7 +81,7 @@
 		}
 	});
 	
-	
+
 
 	NodeList.prototype.on = ElementList.prototype.on = function on() {
 		var i, len = this.length;
@@ -163,6 +163,12 @@
 		parent && parent.removeChild(this);
 	};
 	
+	NodeList.prototype.remove = ElementList.prototype.remove = function remove() {
+		for (var i = this.length - 1; i >= 0; --i) {
+			this[i].remove();
+		}
+	};
+
 	// alias of document.find in the global context:
 	var _alias = '';
 	
@@ -296,6 +302,25 @@
 		// allow methods chaining:
 		return this;
 	};
+
+	// list of properties defined for single elements to transfer to NodeList and ElementList:
+	var elemProps = ['insertBefore', 'insertAfter', 'appendChild', 'appendTo'];
+	elemProps.forEach(function(prop, i) {
+		if (!(prop in NodeList.prototype)) {
+			NodeList.prototype[prop] = function() {
+				if (this.length > 0) {
+					return this[0][prop].apply(this, arguments);
+				}
+			};
+		}
+		if (!(prop in ElementList.prototype)) {
+			ElementList.prototype[prop] = function() {
+				if (this.length > 0) {
+					return this[0][prop].apply(this, arguments);
+				}
+			};
+		}
+	});
 	
 	HTMLDocument.prototype.ready = function ready(callback) {
 		if (this.readyState === 'interactive' || this.readyState === 'complete') {
@@ -344,4 +369,3 @@
 		return obj === this;
 	};
 })();
-
