@@ -213,42 +213,41 @@
 			this.eventListenersList = [];
 		}
 		
-		// object representing the listener:
-		var listener = {
-			eventType: null, // string
-			delegate: null, // selector as a string, matching element delegates, for event delegation
-			handler: null, // the function to trigger at the event
-			proxy: null // the delegate handler, in case of event delegation
-		};
+		var eventType = null, // array of strings
+			delegate = null, // selector as a string, matching element delegates, for event delegation
+			handler = null, // the function to trigger at the event
+			proxy = null; // the delegate handler, in case of event delegation
 
 		if (typeof arguments[0] === 'string') {
-			// eventType must be always a string
-			listener.eventType = arguments[0];
+			// eventType must be always a string; split by whitespaces into an array:
+			eventType = arguments[0].trim().split(/\s+/);
 			
 			if (arguments.length > 1 && typeof arguments[1] === 'function') {
 				// .on(eventType, handler)
-				listener.handler = arguments[1];
+				handler = arguments[1];
 				
 			} else if (arguments.length > 2 && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
 				// .on(eventType, delegate, handler)
-				listener.delegate = arguments[1];
-				listener.handler = arguments[2];
+				delegate = arguments[1];
+				handler = arguments[2];
 				
 				// in event delegation, handler is wrapped
-				listener.proxy = function proxy(e) {
-					if ('is' in e.target && e.target.is(listener.delegate)) {
-						return listener.handler.call(e.target, e);
+				proxy = function proxy(e) {
+					if ('is' in e.target && e.target.is(delegate)) {
+						return handler.call(e.target, e);
 					}
 				};
 			}
 
-			// cache the listeners added to the target:
-			this.eventListenersList.push(listener);
+			for (var i = 0; i < eventType.length; ++i) {
+				// cache the listeners added to the target:
+				this.eventListenersList.push({ eventType: eventType[i], delegate: delegate, handler: handler, proxy: proxy });
 
-			if ('addEventListener' in this) {
-				this.addEventListener(listener.eventType, listener.proxy || listener.handler, false);
-			} else {
-				this.attachEvent('on' + listener.eventType, listener.proxy || listener.handler);
+				if ('addEventListener' in this) {
+					this.addEventListener(eventType, proxy || handler, false);
+				} else {
+					this.attachEvent('on' + eventType, proxy || handler);
+				}
 			}
 		}
 		
@@ -262,40 +261,42 @@
 			this.eventListenersList = [];
 		}
 		
-		var eventType = null,
-			delegate = null,
-			handler = null;
+		var eventType = null, // array of strings
+			delegate = null, // selector as a string, matching element delegates
+			handler = null; // the function to detach from the target
 		
 		if (arguments.length === 1 && typeof arguments[0] === 'string') {
 			// .off(eventType)
-			eventType = arguments[0];
-
+			eventType = arguments[0].trim().split(/\s+/);
+			
 		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'function') {
 			// .off(eventType, handler)
-			eventType = arguments[0];
+			eventType = arguments[0].trim().split(/\s+/);
 			handler = arguments[1];
 			
 		} else if (typeof arguments[0] === 'string' && typeof arguments[1] === 'string' && typeof arguments[2] === 'function') {
 			// .off(eventType, delegate, handler)
-			eventType = arguments[0];
+			eventType = arguments[0].trim().split(/\s+/);
 			delegate = arguments[1];
 			handler = arguments[2];
 		}
 		
-		for (var i = 0; i < this.eventListenersList.length; ++i) {
-			var listener = this.eventListenersList[i];
-
-			if (((eventType === null || eventType === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate))) {
-				if ('removeEventListener' in this) {
-					this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
-				} else {
-					this.detachEvent('on' + listener.eventType, listener.proxy || listener.handler);
+		for (var j = 0; j < eventType.length; ++j) {
+			for (var i = 0; i < this.eventListenersList.length; ++i) {
+				var listener = this.eventListenersList[i];
+                                
+				if (((eventType[j] === null || eventType[j] === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate))) {
+					if ('removeEventListener' in this) {
+						this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
+					} else {
+						this.detachEvent('on' + listener.eventType, listener.proxy || listener.handler);
+					}
+					
+					// remove the listener found:
+					this.eventListenersList.splice(i, 1);
+					// update the counter, as an array element has been removed:
+					i--;
 				}
-				
-				// remove the listener found:
-				this.eventListenersList.splice(i, 1);
-				// update the counter, as an array element has been removed:
-				i--;
 			}
 		}
 		
