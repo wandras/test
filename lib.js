@@ -265,7 +265,10 @@
 			delegate = null, // selector as a string, matching element delegates
 			handler = null; // the function to detach from the target
 		
-		if (arguments.length === 1 && typeof arguments[0] === 'string') {
+		if (arguments.length === 0) {
+			// .off()
+			eventTypes.push(null);
+		} else if (arguments.length === 1 && typeof arguments[0] === 'string') {
 			// .off(eventType)
 			eventTypes = arguments[0].trim().split(/\s+/);
 			
@@ -279,6 +282,9 @@
 			eventTypes = arguments[0].trim().split(/\s+/);
 			delegate = arguments[1];
 			handler = arguments[2];
+		} else {
+			// different combos are not accepted, quit allowing methods chaining:
+			return this;
 		}
 		
 		if (eventTypes.length === 0) {
@@ -286,11 +292,18 @@
 			eventTypes.push(null);
 		}
 
-		for (var j = 0; j < eventTypes.length; ++j) {
-			for (var i = 0; i < this.eventListenersList.length; ++i) {
-				var listener = this.eventListenersList[i];
-
-				if (((eventTypes[j] === null || eventTypes[j] === listener.eventType) && (handler === null || handler === listener.handler) && (delegate === null || delegate === listener.delegate))) {
+		for (var i = 0; i < eventTypes.length; ++i) {
+			var eventType = eventTypes[i];
+			for (var j = 0; j < this.eventListenersList.length; ++j) {
+				var listener = this.eventListenersList[j];
+				if (
+					(eventType === null && handler === null && delegate === null) || // .off()
+					(eventType !== null && eventType === listener.eventType && handler === null && delegate === null) || // .off(eventType)
+					(eventType !== null && eventType === listener.eventType && handler !== null && handler === listener.handler && delegate === null) || // .off(eventType, handler)
+					(eventType !== null && eventType === listener.eventType && handler !== null && handler === listener.handler && delegate !== null && delegate === listener.delegate) // .off(eventType, delegate, handler)
+				) {
+					console.log('Removing', listener.eventType, listener.proxy || listener.handler);
+					
 					if ('removeEventListener' in this) {
 						this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
 					} else {
@@ -298,8 +311,8 @@
 					}
 					
 					// remove the listener found:
-					this.eventListenersList.splice(i, 1);
-					i--; // update the counter, as an array element has been removed:
+					this.eventListenersList.splice(j, 1);
+					j--; // update the counter, as an array element has been removed:
 				}
 			}
 		}
@@ -309,7 +322,7 @@
 	};
 
 	// list of properties defined for single elements to transfer to NodeList and ElementList:
-	var elemProps = ['insertBefore', 'insertAfter', 'appendChild', 'appendTo'];
+	var elemProps = ['insertAfter', 'appendTo'];
 	elemProps.forEach(function(prop, i) {
 		if (!(prop in NodeList.prototype)) {
 			NodeList.prototype[prop] = function() {
