@@ -302,8 +302,6 @@
 					(eventType !== null && eventType === listener.eventType && handler !== null && handler === listener.handler && delegate === null) || // .off(eventType, handler)
 					(eventType !== null && eventType === listener.eventType && handler !== null && handler === listener.handler && delegate !== null && delegate === listener.delegate) // .off(eventType, delegate, handler)
 				) {
-					console.log('Removing', listener.eventType, listener.proxy || listener.handler);
-					
 					if ('removeEventListener' in this) {
 						this.removeEventListener(listener.eventType, listener.proxy || listener.handler);
 					} else {
