@@ -82,30 +82,6 @@
 	});
 	
 
-
-	NodeList.prototype.on = ElementList.prototype.on = function on() {
-		var i, len = this.length;
-		
-		for (i = 0; i < len; ++i) {
-			this[i].on.apply(this[i], arguments);
-		}
-		
-		// allow methods chaining:
-		return this;
-	};
-	
-	NodeList.prototype.off = ElementList.prototype.off = function off() {
-		var i, len = this.length;
-		
-		for (i = 0; i < len; ++i) {
-			this[i].off.apply(this[i], arguments);
-		}
-		
-		// allow methods chaining:
-		return this;
-	};
-	
-	
 	// test
 	HTMLDocument.prototype.find = Element.prototype.find = function find(selector) {
 		var results = this.querySelectorAll(selector);
@@ -113,10 +89,9 @@
 	};
 	
 	NodeList.prototype.find = ElementList.prototype.find = function find(selector) {
-		var results = new ElementList(),
-			i, len = this.length;
+		var results = new ElementList();
 		
-		for (i = 0; i < len; ++i) {
+		for (var i = 0, len = this.length; i < len; ++i) {
 			var matches = this[i].find(selector);
 			
 			if (matches.length > 0) {
@@ -240,13 +215,29 @@
 			}
 
 			for (var i = 0; i < eventTypes.length; ++i) {
-				// cache the listeners added to the target:
-				this.eventListenersList.push({ eventType: eventTypes[i], delegate: delegate, handler: handler, proxy: proxy });
+				var eventType = eventTypes[i],
+					newListener = { eventType: eventType, delegate: delegate, handler: handler, proxy: proxy },
+					registered = false;
 				
-				if ('addEventListener' in this) {
-					this.addEventListener(eventTypes[i], proxy || handler, false);
-				} else {
-					this.attachEvent('on' + eventTypes[i], proxy || handler);
+				for (var j = 0; j < this.eventListenersList.length; ++j) {
+					var listener = this.eventListenersList[j];
+					
+					// check if the listener has been already registered:
+					if (newListener.eventType === listener.eventType && newListener.delegate === listener.delegate && newListener.handler === listener.handler && newListener.proxy === listener.proxy) {
+						registered = true;
+						break;
+					}
+				}
+
+				if (registered === false) {
+					// cache the listeners added to the target:
+					this.eventListenersList.push(newListener);
+					
+					if ('addEventListener' in this) {
+						this.addEventListener(eventType, proxy || handler, false);
+					} else {
+						this.attachEvent('on' + eventType, proxy || handler);
+					}
 				}
 			}
 		}
@@ -319,6 +310,77 @@
 		return this;
 	};
 
+	NodeList.prototype.on = ElementList.prototype.on = function on() {
+		for (var i = 0, len = this.length; i < len; ++i) {
+			this[i].on.apply(this[i], arguments);
+		}
+		// allow methods chaining:
+		return this;
+	};
+	
+	NodeList.prototype.off = ElementList.prototype.off = function off() {
+		for (var i = 0, len = this.length; i < len; ++i) {
+			this[i].off.apply(this[i], arguments);
+		}
+		// allow methods chaining:
+		return this;
+	};
+	
+	Element.prototype.css = function css() {
+		if (arguments.length === 1 && typeof(arguments[0]) === 'string') {
+			// getter: .css(prop)
+			var prop = arguments[0],
+				computedStyle = window.getComputedStyle(this, null);
+			return (prop in computedStyle) && computedStyle[prop] || undefined;
+		} else {
+			var style = {}; // the style object
+
+			if (typeof(arguments[0]) === 'string' && typeof(arguments[1]) === 'string') {
+				// setter: .css(prop, value)
+				style[arguments[0]] = arguments[1];
+			} else if (typeof (arguments[0]) === 'object') {
+				// setter: .css({ prop1: value1, prop2, value2... })
+				style = arguments[0];
+			}
+
+			for (var prop in style) {
+				this.style[prop] = style[prop];
+			}
+			
+			// allow methods chaining:
+			return this;
+		}
+	};
+
+	// direct getters of element geometry values
+	Object.defineProperties(Element.prototype, {
+		'x': {
+			get: function() { return this.getBoundingClientRect().x; }
+		},
+		'y': {
+			get: function() { return this.getBoundingClientRect().y; }
+		},
+		'width': {
+			get: function() { return this.getBoundingClientRect().width; }
+		},
+		'height': {
+			get: function() { return this.getBoundingClientRect().height; }
+		},
+		'top': {
+			get: function() { return this.getBoundingClientRect().top; }
+		},
+		'right': {
+			get: function() { return this.getBoundingClientRect().right; }
+		},
+		'bottom': {
+			get: function() { return this.getBoundingClientRect().bottom; }
+		},
+		'left': {
+			get: function() { return this.getBoundingClientRect().left; }
+		}
+	});
+
+	
 	// list of properties defined for single elements to transfer to NodeList and ElementList:
 	var elemProps = ['insertAfter', 'appendTo'];
 	elemProps.forEach(function(prop, i) {
