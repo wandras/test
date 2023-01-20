@@ -353,31 +353,12 @@
 	};
 
 	// direct getters of element geometry values
-	Object.defineProperties(Element.prototype, {
-		'x': {
-			get: function() { return this.getBoundingClientRect().x; }
-		},
-		'y': {
-			get: function() { return this.getBoundingClientRect().y; }
-		},
-		'width': {
-			get: function() { return this.getBoundingClientRect().width; }
-		},
-		'height': {
-			get: function() { return this.getBoundingClientRect().height; }
-		},
-		'top': {
-			get: function() { return this.getBoundingClientRect().top; }
-		},
-		'right': {
-			get: function() { return this.getBoundingClientRect().right; }
-		},
-		'bottom': {
-			get: function() { return this.getBoundingClientRect().bottom; }
-		},
-		'left': {
-			get: function() { return this.getBoundingClientRect().left; }
-		}
+	['x', 'y', 'width', 'height', 'top', 'right', 'bottom', 'left'].forEach(function(prop) {
+		Object.defineProperty(Element.prototype, prop, {
+			get: function() {
+				return this.getBoundingClientRect()[prop];
+			}
+		});
 	});
 
 	
